@@ -9,7 +9,9 @@ int main(int argc, char *argv[])
     int index = 0, MSQid;
 
     /*    get server options    */
-    if (getServerOptions(&opts, argc, argv) == -1) return -1;
+    if (getServerOptions(&opts, argc, argv) == -1)
+        return -1;
+    printOpts(opts);
     /*    get msq key    */
     if ((key = ftok(opts.pathname, opts.PROJ_ID)) == -1)
     {
@@ -19,14 +21,13 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    if ((MSQid = msgget(key, 0)) == -1)
+    if ((MSQid = msgget(key, IPC_CREAT | 0600)) == -1)
     {
         fprintf(stderr, "Unable to retrieve msg queue from key %d", key);
-        perror("err");
+        perror("Error msgget:");
         return -1;
     }
-    
-    printOpts(opts);
+
     /*    launch server    */
     while (index != opts.tries)
     {
@@ -36,22 +37,25 @@ int main(int argc, char *argv[])
             getchar();
         }
 
-        if (!(opts.tries < 1)) index++;
+        if (!(opts.tries < 1))
+            index++;
         else
             sleep(opts.seconds);
-        
-        
-        if (msgrcv(MSQid,&msg,MSQ_WASHER_BRAND_SIZE+MSQ_WASHER_MODEL_SIZE,1l,IPC_NOWAIT) < 0)
+
+        if (msgrcv(MSQid, &msg, MSQ_WASHER_BRAND_SIZE + MSQ_WASHER_MODEL_SIZE, 0, 0) == -1)
         {
-            
+
             fprintf(stderr, "Error retrieving message from queue\n");
             return -1;
-        } else {
-            msq_washer_deserialize(&washerToReceive,msg);
+        }
+        else
+        {
+            msq_washer_deserialize(&washerToReceive, msg);
             msq_washer_print(washerToReceive);
         }
     }
+    if (msgctl(MSQid, IPC_RMID, NULL) == -1)
+        return 1;
 
-
-return 0;
+    return 0;
 }

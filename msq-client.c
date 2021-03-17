@@ -6,10 +6,11 @@ int main(int argc, char *argv[])
     key_t key;
     msq_washer_t washerToSend;
     msq_washer_message_t msg;
-    int try = 0, MSQid, msgflg = IPC_CREAT;
+    int try = 0, MSQid;
     /*    get client options    */
     if (getClientOptions(&opts, argc, argv) == -1)
         return -1;
+    printOpts(opts.argOpts);
     /*    get msq key    */
     if ((key = ftok(opts.argOpts.pathname, opts.argOpts.PROJ_ID)) == -1)
     {
@@ -18,13 +19,13 @@ int main(int argc, char *argv[])
                 opts.argOpts.pathname, opts.argOpts.PROJ_ID);
         return -1;
     }
-    if ((MSQid = msgget(key, msgflg)) == -1)
+    if ((MSQid = msgget(key, IPC_CREAT | 0600)) == -1)
     {
         fprintf(stderr, "Unable to retrieve msg queue from key %d", key);
+        perror("Error msgget:");
         return -1;
     }
 
-    printOpts(opts.argOpts);
     /*    launch client    */
     while (try != opts.argOpts.tries)
     {
@@ -33,7 +34,8 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Press the Enter key to continue...");
             getchar();
         }
-        if (!(opts.argOpts.tries < 1)) try++;
+        if (!(opts.argOpts.tries < 1))
+            try++;
         else
             sleep(opts.argOpts.seconds);
 
@@ -47,14 +49,14 @@ int main(int argc, char *argv[])
             fprintf(stderr, "Unable to set the washer model to \"%s\" of length %ld.\n", opts.model, strlen(opts.model));
             return -1;
         }
-        msq_washer_serialize(washerToSend,&msg);
-        if (msgsnd(MSQid,&msg,strlen(msg.text),IPC_NOWAIT) == -1)
+        msq_washer_serialize(washerToSend, &msg);
+        if (msgsnd(MSQid, &msg, strlen(msg.text) + 1, 0) == -1)
         {
             fprintf(stderr, "Unable to add message to queue\n");
             return -1;
-        } else msq_washer_print(washerToSend);
-
-        
+        }
+        else
+            msq_washer_print(washerToSend);
     }
     return 0;
 }
