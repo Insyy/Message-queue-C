@@ -17,8 +17,6 @@ void msq_washer_serialize(msq_washer_t washer, msq_washer_message_t *message)
         message->text[m + b + 1] = washer.model[m];
     }
     message->text[m + b + 1] = '\0';
-    //fprintf(stderr, "serialize debug = .%s.\n",message->text);
-
 }
 
 void msq_washer_deserialize(msq_washer_t *washer, msq_washer_message_t message)
@@ -38,12 +36,10 @@ void msq_washer_deserialize(msq_washer_t *washer, msq_washer_message_t message)
             else if (!foundDelim)
             {
                 brandBuff[i] = message.text[i];
-                //fprintf(stderr,"Added letter %c to Brand\n",brandBuff[i]);
             }
             else
             {
                 modelBuff[i-brandSize-1] = message.text[i];
-                //fprintf(stderr,"Added letter %c to Model\n",modelBuff[i-brandSize-1]);
             }
         }
         brandBuff[brandSize] = '\0';
